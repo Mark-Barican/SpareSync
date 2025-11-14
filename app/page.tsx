@@ -1,65 +1,194 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useMemo } from 'react';
+import { SparePart, SparePartWithUrgency } from './types';
+import { quickSortByUrgency, mergeSortByUrgency } from './utils/sorting';
+import { binarySearchByName, searchPartsByName } from './utils/search';
+import { calculatePartsUrgency, generateSampleParts } from './utils/parts';
+import PartsTable from './components/PartsTable';
+import PartForm from './components/PartForm';
 
 export default function Home() {
+  const [parts, setParts] = useState<SparePart[]>(generateSampleParts());
+  const [sortAlgorithm, setSortAlgorithm] = useState<'quicksort' | 'mergesort'>('quicksort');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [useBinarySearch, setUseBinarySearch] = useState(false);
+
+  // Calculate urgency for all parts
+  const partsWithUrgency = useMemo(() => {
+    return calculatePartsUrgency(parts);
+  }, [parts]);
+
+  // Sort parts by urgency
+  const sortedParts = useMemo(() => {
+    const partsCopy = [...partsWithUrgency];
+    if (sortAlgorithm === 'quicksort') {
+      return quickSortByUrgency(partsCopy);
+    } else {
+      return mergeSortByUrgency(partsCopy);
+    }
+  }, [partsWithUrgency, sortAlgorithm]);
+
+  // Search functionality
+  const filteredParts = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return sortedParts;
+    }
+
+    if (useBinarySearch) {
+      const found = binarySearchByName(sortedParts, searchTerm);
+      return found ? [found] : [];
+    } else {
+      return searchPartsByName(sortedParts, searchTerm);
+    }
+  }, [sortedParts, searchTerm, useBinarySearch]);
+
+  const handleAddPart = (part: SparePart) => {
+    setParts([...parts, part]);
+  };
+
+  const handleDeletePart = (id: string) => {
+    setParts(parts.filter((p) => p.id !== id));
+  };
+
+  const handleLoadSample = () => {
+    setParts(generateSampleParts());
+    setSearchTerm('');
+  };
+
+  const needsReorderCount = sortedParts.filter((p) => p.needsReorder).length;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-zinc-50 dark:bg-black">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header */}
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
+            Spare Parts Reordering Assistant
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-lg text-zinc-600 dark:text-zinc-400">
+            Prevent downtime by tracking spare parts inventory and identifying urgent reorder needs
           </p>
+        </header>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Total Parts</div>
+            <div className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
+              {parts.length}
+            </div>
+          </div>
+          <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg border border-red-200 dark:border-red-800">
+            <div className="text-sm text-red-600 dark:text-red-400 mb-1">Needs Reorder</div>
+            <div className="text-3xl font-bold text-red-700 dark:text-red-300">
+              {needsReorderCount}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Adequate Stock</div>
+            <div className="text-3xl font-bold text-green-700 dark:text-green-300">
+              {parts.length - needsReorderCount}
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Controls */}
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-4">
+            <div className="flex flex-wrap gap-4 items-center">
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                  Sorting Algorithm
+                </label>
+                <select
+                  value={sortAlgorithm}
+                  onChange={(e) => setSortAlgorithm(e.target.value as 'quicksort' | 'mergesort')}
+                  className="px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="quicksort">QuickSort</option>
+                  <option value="mergesort">MergeSort</option>
+                </select>
+              </div>
+              <button
+                onClick={handleLoadSample}
+                className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium rounded-md transition-colors"
+              >
+                Load Sample Data
+              </button>
+            </div>
+            <div className="flex-1 max-w-md">
+              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                Search Parts
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search by part name..."
+                  className="flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <label className="flex items-center gap-2 px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useBinarySearch}
+                    onChange={(e) => setUseBinarySearch(e.target.checked)}
+                    className="cursor-pointer"
+                  />
+                  <span className="text-sm text-zinc-700 dark:text-zinc-300">Binary Search</span>
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
+
+        {/* Add Part Form */}
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800 mb-6">
+          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+            Add New Part
+          </h2>
+          <PartForm onAddPart={handleAddPart} />
+        </div>
+
+        {/* Parts Table */}
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+              Parts Inventory (Sorted by Urgency)
+            </h2>
+            {searchTerm && (
+              <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                {filteredParts.length} result{filteredParts.length !== 1 ? 's' : ''} found
+              </span>
+            )}
+          </div>
+          <PartsTable parts={filteredParts} sortAlgorithm={sortAlgorithm} />
+        </div>
+
+        {/* Info Section */}
+        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
+          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+            How It Works
+          </h3>
+          <ul className="space-y-2 text-blue-800 dark:text-blue-200 text-sm">
+            <li>
+              <strong>Urgency Calculation:</strong> Urgency = Current Stock - Reorder Point
+            </li>
+            <li>
+              <strong>Negative values</strong> indicate parts that need immediate reordering
+            </li>
+            <li>
+              <strong>Sorting:</strong> Parts are sorted by urgency (most urgent first) using
+              {sortAlgorithm === 'quicksort' ? ' QuickSort' : ' MergeSort'} algorithm
+            </li>
+            <li>
+              <strong>Search:</strong> Use binary search for exact name matches, or linear search
+              for partial matches
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
