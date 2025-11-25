@@ -16,7 +16,7 @@ export default function PartForm({ onAddPart }: PartFormProps) {
     cost: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const part: SparePart = {
@@ -26,9 +26,37 @@ export default function PartForm({ onAddPart }: PartFormProps) {
       reorderPoint: parseInt(formData.reorderPoint) || 0,
       supplierLeadTime: parseInt(formData.supplierLeadTime) || 0,
       cost: parseFloat(formData.cost) || 0,
-    };
 
-    onAddPart(part);
+      // supplierID
+      supplierId: ''
+    };
+    const request = await fetch('./api/parts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(part)
+    });
+
+    if (request.status !== 200) {
+      return;
+    }
+
+    const reqData = await request.json();
+    
+    const newPart : SparePart = {
+      id: reqData.id,
+      name: reqData.name,
+      currentStock: reqData.currentStock,
+      reorderPoint: reqData.reorderPoint,
+      supplierLeadTime: reqData.supplierLeadTime,
+      cost: reqData.cost,
+
+      // supplierID
+      supplierId: ''
+    }
+
+    onAddPart(newPart);
     
     // Reset form
     setFormData({

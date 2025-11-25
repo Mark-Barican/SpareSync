@@ -5,6 +5,9 @@ export interface SparePart {
   reorderPoint: number;
   supplierLeadTime: number; // in days
   cost: number;
+
+  // Added this
+  supplierId: string;
 }
 
 export interface SparePartWithUrgency extends SparePart {

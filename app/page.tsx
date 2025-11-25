@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { SparePart, SparePartWithUrgency } from './types';
 import { quickSortByUrgency, mergeSortByUrgency } from './utils/sorting';
 import { binarySearchByName, searchPartsByName } from './utils/search';
@@ -9,7 +9,8 @@ import PartsTable from './components/PartsTable';
 import PartForm from './components/PartForm';
 
 export default function Home() {
-  const [parts, setParts] = useState<SparePart[]>(generateSampleParts());
+// search for resource getting the parts from the database that the database.ts file provides
+  const [parts, setParts] = useState<SparePart[]>([]);
   const [sortAlgorithm, setSortAlgorithm] = useState<'quicksort' | 'mergesort'>('quicksort');
   const [searchTerm, setSearchTerm] = useState('');
   const [useBinarySearch, setUseBinarySearch] = useState(false);
@@ -57,6 +58,16 @@ export default function Home() {
   };
 
   const needsReorderCount = sortedParts.filter((p) => p.needsReorder).length;
+
+  useEffect(() => {
+    (async () => {
+      const spareParts = await fetch('./api/parts');
+
+      const content = await spareParts.json();
+
+      setParts(content);
+    })();
+  }, []);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
