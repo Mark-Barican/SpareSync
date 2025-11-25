@@ -3,6 +3,7 @@
 This document outlines the backend implementation needed to complete the Spare Parts Reordering Assistant system using Next.js, Vercel, and Neon Postgres.
 
 ## Current Status
+
 ✅ **Frontend Complete**: The application currently works with mock data stored in browser state. All sorting algorithms, search functionality, and UI components are implemented.
 
 ## Backend Tasks Required
@@ -10,6 +11,7 @@ This document outlines the backend implementation needed to complete the Spare P
 ### 1. Database Setup (Neon Postgres)
 
 #### 1.1 Database Schema
+
 Create the following tables:
 
 ```sql
@@ -59,13 +61,16 @@ CREATE TABLE reorder_history (
 ```
 
 #### 1.2 Environment Variables
+
 Set up in Vercel:
+
 - `DATABASE_URL`: Neon Postgres connection string
 - `NEXT_PUBLIC_API_URL`: API base URL (if needed)
 
 ### 2. API Routes (Next.js API Routes)
 
 #### 2.1 GET `/api/parts`
+
 - Fetch all spare parts from database
 - Calculate urgency on the fly or use database view
 - Support query parameters:
@@ -74,6 +79,7 @@ Set up in Vercel:
   - `needsReorder`: boolean (filter by reorder status)
 
 **Response:**
+
 ```json
 {
   "parts": [
@@ -94,11 +100,13 @@ Set up in Vercel:
 ```
 
 #### 2.2 POST `/api/parts`
+
 - Create a new spare part
 - Validate input data
 - Return created part with calculated urgency
 
 **Request Body:**
+
 ```json
 {
   "name": "New Part",
@@ -110,21 +118,25 @@ Set up in Vercel:
 ```
 
 #### 2.3 PUT `/api/parts/[id]`
+
 - Update an existing spare part
 - Update `updated_at` timestamp
 - Return updated part with recalculated urgency
 
 #### 2.4 DELETE `/api/parts/[id]`
+
 - Soft delete or hard delete a part
 - Return success status
 
 #### 2.5 GET `/api/parts/search`
+
 - Search parts by name
 - Support binary search optimization (if sorted by name)
 - Query parameter: `q` (search term)
 - Query parameter: `useBinary` (boolean)
 
 #### 2.6 GET `/api/parts/stats`
+
 - Return summary statistics:
   - Total parts count
   - Parts needing reorder
@@ -135,6 +147,7 @@ Set up in Vercel:
 ### 3. Database Client Setup
 
 #### 3.1 Install Dependencies
+
 ```bash
 npm install @neondatabase/serverless
 # or
@@ -144,7 +157,9 @@ npm install drizzle-orm drizzle-kit
 ```
 
 #### 3.2 Database Connection
+
 Create `lib/db.ts`:
+
 ```typescript
 import { neon } from '@neondatabase/serverless';
 
@@ -153,6 +168,7 @@ export { sql };
 ```
 
 Or using Drizzle ORM:
+
 ```typescript
 import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
@@ -165,16 +181,19 @@ export const db = drizzle(sql, { schema });
 ### 4. Data Validation & Security
 
 #### 4.1 Input Validation
+
 - Use Zod or similar for schema validation
 - Validate all numeric inputs (stock, reorder point, cost)
 - Sanitize string inputs (part names)
 
 #### 4.2 Error Handling
+
 - Implement proper error handling middleware
 - Return appropriate HTTP status codes
 - Log errors for debugging
 
 #### 4.3 Authentication (Optional but Recommended)
+
 - Add authentication for multi-user support
 - Use NextAuth.js or similar
 - Protect API routes
@@ -182,22 +201,26 @@ export const db = drizzle(sql, { schema });
 ### 5. Performance Optimizations
 
 #### 5.1 Database Indexing
+
 - Index on `(current_stock - reorder_point)` for urgency calculations
 - Index on `name` for search operations
 - Consider materialized views for frequently accessed data
 
 #### 5.2 Caching
+
 - Use Vercel's Edge Caching for read operations
 - Cache stats and frequently accessed queries
 - Implement cache invalidation on updates
 
 #### 5.3 Pagination
+
 - Implement pagination for large datasets
 - Use cursor-based or offset-based pagination
 
 ### 6. Real-time Updates (Optional Enhancement)
 
 #### 6.1 WebSocket/Server-Sent Events
+
 - Real-time stock updates
 - Notifications when parts fall below reorder point
 - Use Vercel's Edge Functions or separate WebSocket service
@@ -205,11 +228,13 @@ export const db = drizzle(sql, { schema });
 ### 7. Testing
 
 #### 7.1 Unit Tests
+
 - Test sorting algorithms
 - Test search functions
 - Test urgency calculations
 
 #### 7.2 Integration Tests
+
 - Test API endpoints
 - Test database operations
 - Test error scenarios
@@ -286,4 +311,3 @@ Once backend is ready, update frontend:
 - Frontend integration: 2-3 hours
 - Testing and debugging: 2-3 hours
 - **Total: 10-16 hours**
-
