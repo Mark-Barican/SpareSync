@@ -25,9 +25,9 @@ import { SparePart } from '@/app/types';
 // }
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const { id } = params;
+    const { id } = await params;
     try {
         const part = await getPartById(id);
 
@@ -75,9 +75,9 @@ export async function GET(
 // }
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const { id } = params;
+    const { id } = await params;
     try {
         const body = await request.json();
         const { name, currentStock, reorderPoint, supplierLeadTime, cost } = body;
@@ -138,9 +138,9 @@ export async function PATCH(
 // }
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const { id } = params;
+    const { id } = await params;
     try {
         await deletePart(id);
         return NextResponse.json({

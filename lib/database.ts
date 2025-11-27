@@ -42,34 +42,31 @@ export async function createPart(part: parts) {
 export async function updatePart(id: string, part: Partial<parts>) {
     const sql = getSql();
 
-    // Build dynamic SET clause only for provided fields
-    const fields: string[] = [];
-    const values: any[] = [];
-
-    if (part.name !== undefined) {
-        fields.push(`name = ${values.push(part.name.trim()) && values[values.length - 1]}`);
-    }
-    if (part.currentStock !== undefined) {
-        fields.push(`current_stock = ${values.push(part.currentStock) && values[values.length - 1]}`);
-    }
-    if (part.reorderPoint !== undefined) {
-        fields.push(`reorder_point = ${values.push(part.reorderPoint) && values[values.length - 1]}`);
-    }
-    if (part.supplierLeadTime !== undefined) {
-        fields.push(`supplier_lead_time = ${values.push(part.supplierLeadTime) && values[values.length - 1]}`);
-    }
-    if (part.cost !== undefined) {
-        fields.push(`cost = ${values.push(part.cost) && values[values.length - 1]}`);
+    // Get current part to merge with updates
+    const current = await getPartById(id);
+    if (!current) {
+        throw new Error('Part not found');
     }
 
-    // If nothing to update, just return
-    if (fields.length === 0) {
-        return;
-    }
+    // Merge current values with updates
+    const updatedPart: parts = {
+        name: part.name !== undefined ? part.name.trim() : current.name,
+        currentStock: part.currentStock !== undefined ? part.currentStock : current.current_stock,
+        reorderPoint: part.reorderPoint !== undefined ? part.reorderPoint : current.reorder_point,
+        supplierLeadTime: part.supplierLeadTime !== undefined ? part.supplierLeadTime : current.supplier_lead_time,
+        cost: part.cost !== undefined ? part.cost : current.cost,
+    };
 
+    // Update all fields (some may be unchanged, but this ensures consistency)
     await sql`
         UPDATE spare_parts
-        SET ${sql([fields.join(', ')])}
+        SET 
+            name = ${updatedPart.name},
+            current_stock = ${updatedPart.currentStock},
+            reorder_point = ${updatedPart.reorderPoint},
+            supplier_lead_time = ${updatedPart.supplierLeadTime},
+            cost = ${updatedPart.cost},
+            updated_at = NOW()
         WHERE id = ${id}
     `;
 }
