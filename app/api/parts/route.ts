@@ -18,8 +18,6 @@ export async function GET(request: NextRequest) {
       reorderPoint: part.reorder_point,
       supplierLeadTime: part.supplier_lead_time,
       cost: part.cost,
-      
-      supplierId: ''
     }
 
     result.push(data);
@@ -57,7 +55,6 @@ export async function POST(request: NextRequest) {
       reorderPoint: part.reorder_point,
       supplierLeadTime: part.supplier_lead_time,
       cost: part.cost,
-      supplierId: ''
     }
 
     result.push(data);
