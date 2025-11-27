@@ -67,6 +67,20 @@ export async function searchParts(searchTerm: string) {
     return result;
 }
 
+export async function getPartStatistics() {
+    const sql = getSql();
+
+    const totalParts = await sql`SELECT COUNT(*) FROM spare_parts`;
+    const partsBelowReorder = await sql`SELECT COUNT(*) FROM spare_parts WHERE current_stock < reorder_point`;
+    const averageCost = await sql`SELECT AVG(cost) FROM spare_parts`;
+
+    return {
+        totalParts: parseInt(totalParts[0].count),
+        partsBelowReorder: parseInt(partsBelowReorder[0].count),
+        averageCost: parseFloat(averageCost[0].avg || 0),
+    };
+}
+
 // DELETE
 export async function deletePart(id: string) {
     const sql = getSql();

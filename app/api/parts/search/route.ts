@@ -2,6 +2,30 @@ import { NextRequest, NextResponse } from 'next/server';
 import { searchParts } from '@/lib/database';
 import { SparePart } from '@/app/types';
 
+// GET /api/parts/search?q={searchTerm}
+// Description: Searches for spare parts by name.
+// Example Request:
+// GET /api/parts/search?q=engine
+// Example Response (200 OK):
+// [
+//   {
+//     "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+//     "name": "Engine Filter",
+//     "currentStock": 50,
+//     "reorderPoint": 10,
+//     "supplierLeadTime": 7,
+//     "cost": 15.75
+//   }
+// ]
+// Example Error Response (400 Bad Request):
+// {
+//   "error": "Query parameter \"q\" is required"
+// }
+// Example Error Response (500 Internal Server Error):
+// {
+//   "error": "Failed to search parts"
+// }
+
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const searchTerm = searchParams.get('q');

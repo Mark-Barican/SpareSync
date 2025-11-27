@@ -2,7 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { updatePart, deletePart, getPartById } from '@/lib/database';
 import { SparePart } from '@/app/types';
 
-// GET ./api/parts/[id] -> get a single part resource by ID.
+// GET /api/parts/{id}
+// Description: Retrieves a single spare part by its ID.
+// Example Request:
+// GET /api/parts/a1b2c3d4-e5f6-7890-1234-567890abcdef
+// Example Response (200 OK):
+// {
+//   "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+//   "name": "Engine Filter",
+//   "currentStock": 50,
+//   "reorderPoint": 10,
+//   "supplierLeadTime": 7,
+//   "cost": 15.75
+// }
+// Example Error Response (404 Not Found):
+// {
+//   "error": "Part not found"
+// }
+// Example Error Response (500 Internal Server Error):
+// {
+//   "error": "Failed to retrieve part"
+// }
 export async function GET(
     request: NextRequest,
     { params }: { params: { id: string } }
@@ -31,8 +51,28 @@ export async function GET(
     }
 }
 
-// PATCH ./api/parts/[id] -> get the request body's content, transform into parts.
-// using the specified part's id.
+// PATCH /api/parts/{id}
+// Description: Updates an existing spare part by its ID.
+// Example Request:
+// PATCH /api/parts/a1b2c3d4-e5f6-7890-1234-567890abcdef
+// Content-Type: application/json
+// {
+//   "currentStock": 55,
+//   "cost": 16.00
+// }
+// Example Response (200 OK):
+// {
+//   "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+//   "message": "Content updated!"
+// }
+// Example Error Response (400 Bad Request):
+// {
+//   "error": "Current Stock must be a non-negative number if provided"
+// }
+// Example Error Response (500 Internal Server Error):
+// {
+//   "error": "Failed to update part"
+// }
 export async function PATCH(
     request: NextRequest,
     { params }: { params: { id: string } }
@@ -69,7 +109,7 @@ export async function PATCH(
             }
         }
 
-        const part: SparePart = body; // The `parts` type should ideally be `Partial<parts>` here
+        const part: Partial<parts> = body; // The `parts` type should ideally be `Partial<parts>` here
         await updatePart(id, part);
         return NextResponse.json({
             'id': id,
@@ -83,7 +123,19 @@ export async function PATCH(
     }
 }
 
-// DELETE ./api/parts/[id]
+// DELETE /api/parts/{id}
+// Description: Deletes a spare part by its ID.
+// Example Request:
+// DELETE /api/parts/a1b2c3d4-e5f6-7890-1234-567890abcdef
+// Example Response (200 OK):
+// {
+//   "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+//   "message": "Content deleted!"
+// }
+// Example Error Response (500 Internal Server Error):
+// {
+//   "error": "Failed to delete part"
+// }
 export async function DELETE(
     request: NextRequest,
     { params }: { params: { id: string } }
