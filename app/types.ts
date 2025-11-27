@@ -12,3 +12,16 @@ export interface SparePartWithUrgency extends SparePart {
   needsReorder: boolean;
 }
 
+export interface GetPartsResponse {
+  parts: SparePartWithUrgency[];
+  total: number;
+  needsReorderCount: number;
+}
+
+export interface PartsStats {
+    totalParts: number;
+    partsNeedingReorder: number;
+    partsWithAdequateStock: number;
+    totalInventoryValue: number;
+    averageLeadTime: number;
+}

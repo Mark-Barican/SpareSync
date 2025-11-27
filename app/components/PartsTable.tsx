@@ -42,13 +42,13 @@ export default function PartsTable({ parts, sortAlgorithm }: PartsTableProps) {
               Current Stock
             </th>
             <th className="px-4 py-3 text-right font-semibold text-zinc-900 dark:text-zinc-100">
-              Reorder Point
+              Minimum Stock
             </th>
             <th className="px-4 py-3 text-right font-semibold text-zinc-900 dark:text-zinc-100">
-              Urgency
+              Priority Level
             </th>
             <th className="px-4 py-3 text-right font-semibold text-zinc-900 dark:text-zinc-100">
-              Lead Time (days)
+              Delivery Time (days)
             </th>
             <th className="px-4 py-3 text-right font-semibold text-zinc-900 dark:text-zinc-100">
               Cost
