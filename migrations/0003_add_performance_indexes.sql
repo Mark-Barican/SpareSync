@@ -1,6 +1,5 @@
--- Indexes for performance on suppliers table
 CREATE INDEX idx_suppliers_name ON suppliers (name);
-CREATE INDEX idx_suppliers_email ON suppliers (contact_email);
+CREATE INDEX idx_suppliers_email ON suppliers (email);
 
 -- Indexes for performance on reorder_history table
 CREATE INDEX idx_reorder_history_part_id ON reorder_history (part_id);

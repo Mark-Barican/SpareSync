@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { updatePart, deletePart, getPartById } from '@/lib/database';
+import { updatePart, deletePart, getPartById, parts } from '@/lib/database';
 import { SparePart } from '@/app/types';
 
 // GET /api/parts/{id}
@@ -109,7 +109,7 @@ export async function PATCH(
             }
         }
 
-        const part: Partial<parts> = body; // The `parts` type should ideally be `Partial<parts>` here
+        const part: Partial<parts> = { name, currentStock, reorderPoint, supplierLeadTime, cost };
         await updatePart(id, part);
         return NextResponse.json({
             'id': id,

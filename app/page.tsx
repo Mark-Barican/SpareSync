@@ -61,11 +61,17 @@ export default function Home() {
 
   useEffect(() => {
     (async () => {
-      const spareParts = await fetch('./api/parts');
-
-      const content = await spareParts.json();
-
-      setParts(content);
+      try {
+        const response = await fetch('/api/parts');
+        if (!response.ok) {
+          console.error('Failed to load parts from API', await response.text());
+          return;
+        }
+        const content: SparePart[] = await response.json();
+        setParts(content);
+      } catch (error) {
+        console.error('Error fetching parts from API', error);
+      }
     })();
   }, []);
 
@@ -91,13 +97,13 @@ export default function Home() {
             </div>
           </div>
           <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg border border-red-200 dark:border-red-800">
-            <div className="text-sm text-red-600 dark:text-red-400 mb-1">Needs Reorder</div>
+            <div className="text-sm text-red-600 dark:text-red-400 mb-1">High Priority</div>
             <div className="text-3xl font-bold text-red-700 dark:text-red-300">
               {needsReorderCount}
             </div>
           </div>
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Adequate Stock</div>
+            <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Low Priority</div>
             <div className="text-3xl font-bold text-green-700 dark:text-green-300">
               {parts.length - needsReorderCount}
             </div>
@@ -166,7 +172,7 @@ export default function Home() {
         <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-              Parts Inventory (Sorted by Urgency)
+              Parts Inventory (Sorted by Priority Level)
             </h2>
             {searchTerm && (
               <span className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -184,7 +190,7 @@ export default function Home() {
           </h3>
           <ul className="space-y-2 text-blue-800 dark:text-blue-200 text-sm">
             <li>
-              <strong>Urgency Calculation:</strong> Urgency = Current Stock - Reorder Point
+              <strong>Priority Level Calculation:</strong> Priority Level = Current Stock - Minimum Stock
             </li>
             <li>
               <strong>Negative values</strong> indicate parts that need immediate reordering

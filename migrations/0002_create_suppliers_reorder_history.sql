@@ -1,4 +1,3 @@
--- Create the suppliers table
 CREATE TABLE suppliers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
@@ -8,6 +7,15 @@ CREATE TABLE suppliers (
     address TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Optional: relationship table between parts and suppliers
+CREATE TABLE part_suppliers (
+    part_id UUID REFERENCES spare_parts(id) ON DELETE CASCADE,
+    supplier_id UUID REFERENCES suppliers(id) ON DELETE CASCADE,
+    lead_time INTEGER NOT NULL,
+    cost DECIMAL(10, 2) NOT NULL,
+    PRIMARY KEY (part_id, supplier_id)
 );
 
 -- Create the reorder_history table
