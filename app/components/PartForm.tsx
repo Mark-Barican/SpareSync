@@ -15,9 +15,11 @@ export default function PartForm({ onAddPart }: PartFormProps) {
     supplierLeadTime: '',
     cost: '',
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
 
     const payload = {
       name: formData.name,
@@ -27,46 +29,54 @@ export default function PartForm({ onAddPart }: PartFormProps) {
       cost: parseFloat(formData.cost) || 0,
     };
 
-    const request = await fetch('/api/parts', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    });
+    try {
+      const request = await fetch('/api/parts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
 
-    if (request.status !== 201) {
-      return;
+      if (request.status !== 201) {
+        console.error('Failed to create part');
+        setSubmitting(false);
+        return;
+      }
+
+      const reqData = await request.json();
+
+      const newPart: SparePart = {
+        id: reqData.id,
+        name: reqData.name,
+        currentStock: reqData.currentStock,
+        reorderPoint: reqData.reorderPoint,
+        supplierLeadTime: reqData.supplierLeadTime,
+        cost: reqData.cost,
+      };
+
+      onAddPart(newPart);
+      
+      // Reset form
+      setFormData({
+        name: '',
+        currentStock: '',
+        reorderPoint: '',
+        supplierLeadTime: '',
+        cost: '',
+      });
+    } catch (error) {
+      console.error('Error creating part:', error);
+    } finally {
+      setSubmitting(false);
     }
-
-    const reqData = await request.json();
-
-    const newPart: SparePart = {
-      id: reqData.id,
-      name: reqData.name,
-      currentStock: reqData.currentStock,
-      reorderPoint: reqData.reorderPoint,
-      supplierLeadTime: reqData.supplierLeadTime,
-      cost: reqData.cost,
-    };
-
-    onAddPart(newPart);
-    
-    // Reset form
-    setFormData({
-      name: '',
-      currentStock: '',
-      reorderPoint: '',
-      supplierLeadTime: '',
-      cost: '',
-    });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label htmlFor="name" className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
             Part Name
           </label>
           <input
@@ -75,12 +85,12 @@ export default function PartForm({ onAddPart }: PartFormProps) {
             required
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., Hydraulic Pump Seal"
+            className="w-full px-2 py-1.5 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            placeholder="Part name"
           />
         </div>
         <div>
-          <label htmlFor="currentStock" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label htmlFor="currentStock" className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
             Current Stock
           </label>
           <input
@@ -90,13 +100,13 @@ export default function PartForm({ onAddPart }: PartFormProps) {
             min="0"
             value={formData.currentStock}
             onChange={(e) => setFormData({ ...formData, currentStock: e.target.value })}
-            className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-2 py-1.5 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
             placeholder="0"
           />
         </div>
         <div>
-          <label htmlFor="reorderPoint" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-            Reorder Point
+          <label htmlFor="reorderPoint" className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            Min Stock
           </label>
           <input
             type="number"
@@ -105,13 +115,13 @@ export default function PartForm({ onAddPart }: PartFormProps) {
             min="0"
             value={formData.reorderPoint}
             onChange={(e) => setFormData({ ...formData, reorderPoint: e.target.value })}
-            className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-2 py-1.5 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
             placeholder="0"
           />
         </div>
         <div>
-          <label htmlFor="supplierLeadTime" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-            Lead Time (days)
+          <label htmlFor="supplierLeadTime" className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+            Delivery (days)
           </label>
           <input
             type="number"
@@ -120,12 +130,12 @@ export default function PartForm({ onAddPart }: PartFormProps) {
             min="0"
             value={formData.supplierLeadTime}
             onChange={(e) => setFormData({ ...formData, supplierLeadTime: e.target.value })}
-            className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-2 py-1.5 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
             placeholder="0"
           />
         </div>
         <div>
-          <label htmlFor="cost" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label htmlFor="cost" className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
             Cost ($)
           </label>
           <input
@@ -136,18 +146,18 @@ export default function PartForm({ onAddPart }: PartFormProps) {
             step="0.01"
             value={formData.cost}
             onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-            className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-2 py-1.5 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
             placeholder="0.00"
           />
         </div>
       </div>
       <button
         type="submit"
-        className="w-full md:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
+        disabled={submitting}
+        className="px-4 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Add Part
+        {submitting ? 'Adding...' : 'Add Part'}
       </button>
     </form>
   );
 }
-

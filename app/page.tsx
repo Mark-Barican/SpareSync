@@ -2,65 +2,92 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { SparePart, SparePartWithUrgency } from './types';
-import { quickSortByUrgency, mergeSortByUrgency } from './utils/sorting';
-import { binarySearchByName, searchPartsByName } from './utils/search';
+import { sortParts, SortField, SortDirection } from './utils/sorting';
+import { searchPartsByName } from './utils/search';
 import { calculatePartsUrgency, generateSampleParts } from './utils/parts';
 import PartsTable from './components/PartsTable';
 import PartForm from './components/PartForm';
 
 export default function Home() {
-// search for resource getting the parts from the database that the database.ts file provides
   const [parts, setParts] = useState<SparePart[]>([]);
-  const [sortAlgorithm, setSortAlgorithm] = useState<'quicksort' | 'mergesort'>('quicksort');
+  const [loading, setLoading] = useState(true);
+  const [sortField, setSortField] = useState<SortField>('priority');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [searchTerm, setSearchTerm] = useState('');
-  const [useBinarySearch, setUseBinarySearch] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
   // Calculate urgency for all parts
   const partsWithUrgency = useMemo(() => {
     return calculatePartsUrgency(parts);
   }, [parts]);
 
-  // Sort parts by urgency
+  // Sort parts
   const sortedParts = useMemo(() => {
-    const partsCopy = [...partsWithUrgency];
-    if (sortAlgorithm === 'quicksort') {
-      return quickSortByUrgency(partsCopy);
-    } else {
-      return mergeSortByUrgency(partsCopy);
-    }
-  }, [partsWithUrgency, sortAlgorithm]);
+    return sortParts(partsWithUrgency, sortField, sortDirection);
+  }, [partsWithUrgency, sortField, sortDirection]);
 
   // Search functionality
   const filteredParts = useMemo(() => {
     if (!searchTerm.trim()) {
       return sortedParts;
     }
-
-    if (useBinarySearch) {
-      const found = binarySearchByName(sortedParts, searchTerm);
-      return found ? [found] : [];
-    } else {
-      return searchPartsByName(sortedParts, searchTerm);
-    }
-  }, [sortedParts, searchTerm, useBinarySearch]);
+    return searchPartsByName(sortedParts, searchTerm);
+  }, [sortedParts, searchTerm]);
 
   const handleAddPart = (part: SparePart) => {
     setParts([...parts, part]);
+    setShowForm(false);
   };
 
-  const handleDeletePart = (id: string) => {
-    setParts(parts.filter((p) => p.id !== id));
+  const handleDeletePart = async (id: string) => {
+    try {
+      const response = await fetch(`/api/parts/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        setParts(parts.filter((p) => p.id !== id));
+      }
+    } catch (error) {
+      console.error('Failed to delete part:', error);
+    }
   };
 
-  const handleLoadSample = () => {
-    setParts(generateSampleParts());
-    setSearchTerm('');
+  const handleLoadDummyData = async () => {
+    const sampleParts = generateSampleParts();
+    setLoading(true);
+    
+    try {
+      // Insert each sample part via API
+      for (const part of sampleParts) {
+        await fetch('/api/parts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: part.name,
+            currentStock: part.currentStock,
+            reorderPoint: part.reorderPoint,
+            supplierLeadTime: part.supplierLeadTime,
+            cost: part.cost,
+          }),
+        });
+      }
+      
+      // Reload parts from API
+      const response = await fetch('/api/parts');
+      if (response.ok) {
+        const data = await response.json();
+        setParts(data);
+      }
+    } catch (error) {
+      console.error('Failed to load dummy data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const needsReorderCount = sortedParts.filter((p) => p.needsReorder).length;
 
   useEffect(() => {
     (async () => {
+      setLoading(true);
       try {
         const response = await fetch('/api/parts');
         if (!response.ok) {
@@ -71,139 +98,129 @@ export default function Home() {
         setParts(content);
       } catch (error) {
         console.error('Error fetching parts from API', error);
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
-            Spare Parts Reordering Assistant
-          </h1>
-          <p className="text-lg text-zinc-600 dark:text-zinc-400">
-            Prevent downtime by tracking spare parts inventory and identifying urgent reorder needs
-          </p>
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        {/* Compact Header */}
+        <header className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                SpareSync
+              </h1>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5">
+                Inventory management & reorder tracking
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleLoadDummyData}
+                disabled={loading}
+                className="px-3 py-1.5 text-sm bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium rounded transition-colors disabled:opacity-50"
+              >
+                Test Data
+              </button>
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded transition-colors"
+              >
+                {showForm ? 'Cancel' : '+ Add Part'}
+              </button>
+            </div>
+          </div>
         </header>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Total Parts</div>
-            <div className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">
+        {/* Compact Stats */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-white dark:bg-zinc-900 p-3 rounded border border-zinc-200 dark:border-zinc-800">
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Total</div>
+            <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
               {parts.length}
             </div>
           </div>
-          <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg border border-red-200 dark:border-red-800">
-            <div className="text-sm text-red-600 dark:text-red-400 mb-1">High Priority</div>
-            <div className="text-3xl font-bold text-red-700 dark:text-red-300">
+          <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800">
+            <div className="text-xs text-red-600 dark:text-red-400 mb-0.5">High Priority</div>
+            <div className="text-xl font-semibold text-red-700 dark:text-red-300">
               {needsReorderCount}
             </div>
           </div>
-          <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <div className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">Low Priority</div>
-            <div className="text-3xl font-bold text-green-700 dark:text-green-300">
+          <div className="bg-white dark:bg-zinc-900 p-3 rounded border border-zinc-200 dark:border-zinc-800">
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Low Priority</div>
+            <div className="text-xl font-semibold text-green-700 dark:text-green-300">
               {parts.length - needsReorderCount}
             </div>
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800 mb-6">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-4">
-            <div className="flex flex-wrap gap-4 items-center">
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                  Sorting Algorithm
-                </label>
-                <select
-                  value={sortAlgorithm}
-                  onChange={(e) => setSortAlgorithm(e.target.value as 'quicksort' | 'mergesort')}
-                  className="px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="quicksort">QuickSort</option>
-                  <option value="mergesort">MergeSort</option>
-                </select>
-              </div>
-              <button
-                onClick={handleLoadSample}
-                className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 font-medium rounded-md transition-colors"
+        {/* Compact Form (Collapsible) */}
+        {showForm && (
+          <div className="bg-white dark:bg-zinc-900 p-4 rounded border border-zinc-200 dark:border-zinc-800 mb-4">
+            <PartForm onAddPart={handleAddPart} />
+          </div>
+        )}
+
+        {/* Compact Controls */}
+        <div className="bg-white dark:bg-zinc-900 p-3 rounded border border-zinc-200 dark:border-zinc-800 mb-4">
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                Sort by:
+              </label>
+              <select
+                value={sortField}
+                onChange={(e) => setSortField(e.target.value as SortField)}
+                className="px-2 py-1 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
-                Load Sample Data
+                <option value="priority">Priority Level</option>
+                <option value="name">Name</option>
+                <option value="stock">Current Stock</option>
+                <option value="cost">Cost</option>
+                <option value="delivery">Delivery Time</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                Order:
+              </label>
+              <button
+                onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                className="px-2 py-1 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+              >
+                {sortDirection === 'asc' ? '↑ Asc' : '↓ Desc'}
               </button>
             </div>
-            <div className="flex-1 max-w-md">
-              <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                Search Parts
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by part name..."
-                  className="flex-1 px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <label className="flex items-center gap-2 px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={useBinarySearch}
-                    onChange={(e) => setUseBinarySearch(e.target.checked)}
-                    className="cursor-pointer"
-                  />
-                  <span className="text-sm text-zinc-700 dark:text-zinc-300">Binary Search</span>
-                </label>
-              </div>
+            <div className="flex-1 min-w-[200px]">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search parts..."
+                className="w-full px-2 py-1 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
             </div>
-          </div>
-        </div>
-
-        {/* Add Part Form */}
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800 mb-6">
-          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
-            Add New Part
-          </h2>
-          <PartForm onAddPart={handleAddPart} />
-        </div>
-
-        {/* Parts Table */}
-        <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-              Parts Inventory (Sorted by Priority Level)
-            </h2>
             {searchTerm && (
-              <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                {filteredParts.length} result{filteredParts.length !== 1 ? 's' : ''} found
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                {filteredParts.length} result{filteredParts.length !== 1 ? 's' : ''}
               </span>
             )}
           </div>
-          <PartsTable parts={filteredParts} sortAlgorithm={sortAlgorithm} />
         </div>
 
-        {/* Info Section */}
-        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
-          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-            How It Works
-          </h3>
-          <ul className="space-y-2 text-blue-800 dark:text-blue-200 text-sm">
-            <li>
-              <strong>Priority Level Calculation:</strong> Priority Level = Current Stock - Minimum Stock
-            </li>
-            <li>
-              <strong>Negative values</strong> indicate parts that need immediate reordering
-            </li>
-            <li>
-              <strong>Sorting:</strong> Parts are sorted by urgency (most urgent first) using
-              {sortAlgorithm === 'quicksort' ? ' QuickSort' : ' MergeSort'} algorithm
-            </li>
-            <li>
-              <strong>Search:</strong> Use binary search for exact name matches, or linear search
-              for partial matches
-            </li>
-          </ul>
+        {/* Compact Table */}
+        <div className="bg-white dark:bg-zinc-900 rounded border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+          <PartsTable 
+            parts={filteredParts} 
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onDelete={handleDeletePart}
+            loading={loading}
+          />
         </div>
       </div>
     </div>
