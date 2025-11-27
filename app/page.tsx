@@ -138,32 +138,38 @@ export default function Home() {
 
         {/* Compact Stats */}
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-white dark:bg-zinc-900 p-3 rounded border border-zinc-200 dark:border-zinc-800">
+          <div className="bg-white dark:bg-zinc-900 p-3 rounded border border-zinc-200 dark:border-zinc-800 transition-all duration-300 hover:shadow-sm">
             <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Total</div>
-            <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+            <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 number-transition">
               {parts.length}
             </div>
           </div>
-          <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800">
+          <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-200 dark:border-red-800 transition-all duration-300 hover:shadow-sm">
             <div className="text-xs text-red-600 dark:text-red-400 mb-0.5">High Priority</div>
-            <div className="text-xl font-semibold text-red-700 dark:text-red-300">
+            <div className="text-xl font-semibold text-red-700 dark:text-red-300 number-transition">
               {needsReorderCount}
             </div>
           </div>
-          <div className="bg-white dark:bg-zinc-900 p-3 rounded border border-zinc-200 dark:border-zinc-800">
+          <div className="bg-white dark:bg-zinc-900 p-3 rounded border border-zinc-200 dark:border-zinc-800 transition-all duration-300 hover:shadow-sm">
             <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-0.5">Low Priority</div>
-            <div className="text-xl font-semibold text-green-700 dark:text-green-300">
+            <div className="text-xl font-semibold text-green-700 dark:text-green-300 number-transition">
               {parts.length - needsReorderCount}
             </div>
           </div>
         </div>
 
         {/* Compact Form (Collapsible) */}
-        {showForm && (
-          <div className="bg-white dark:bg-zinc-900 p-4 rounded border border-zinc-200 dark:border-zinc-800 mb-4">
-            <PartForm onAddPart={handleAddPart} />
-          </div>
-        )}
+        <div
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+            showForm ? 'max-h-96 opacity-100 mb-4' : 'max-h-0 opacity-0 mb-0'
+          }`}
+        >
+          {showForm && (
+            <div className="bg-white dark:bg-zinc-900 p-4 rounded border border-zinc-200 dark:border-zinc-800">
+              <PartForm onAddPart={handleAddPart} />
+            </div>
+          )}
+        </div>
 
         {/* Compact Controls */}
         <div className="bg-white dark:bg-zinc-900 p-3 rounded border border-zinc-200 dark:border-zinc-800 mb-4">
@@ -175,7 +181,7 @@ export default function Home() {
               <select
                 value={sortField}
                 onChange={(e) => setSortField(e.target.value as SortField)}
-                className="px-2 py-1 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="px-2 py-1 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all duration-200"
               >
                 <option value="priority">Priority Level</option>
                 <option value="name">Name</option>
@@ -190,22 +196,33 @@ export default function Home() {
               </label>
               <button
                 onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-                className="px-2 py-1 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                className="px-2 py-1 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all duration-200 active:scale-95"
               >
-                {sortDirection === 'asc' ? '↑ Asc' : '↓ Desc'}
+                <span className="inline-block transition-transform duration-200">
+                  {sortDirection === 'asc' ? '↑ Asc' : '↓ Desc'}
+                </span>
               </button>
             </div>
-            <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 min-w-[200px] relative">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search parts..."
-                className="w-full px-2 py-1 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-2 py-1 text-sm border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all duration-200"
               />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                  aria-label="Clear search"
+                >
+                  ×
+                </button>
+              )}
             </div>
             {searchTerm && (
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 animate-in fade-in slide-in-from-right-2 duration-200">
                 {filteredParts.length} result{filteredParts.length !== 1 ? 's' : ''}
               </span>
             )}

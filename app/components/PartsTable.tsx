@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { SparePartWithUrgency } from '../types';
 import { SortField, SortDirection } from '../utils/sorting';
 
@@ -12,6 +13,18 @@ interface PartsTableProps {
 }
 
 export default function PartsTable({ parts, sortField, sortDirection, onDelete, loading }: PartsTableProps) {
+  const [displayedParts, setDisplayedParts] = useState<SparePartWithUrgency[]>(parts);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    setIsAnimating(true);
+    const timer = setTimeout(() => {
+      setDisplayedParts(parts);
+      setIsAnimating(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [parts]);
+
   const getPriorityColor = (urgency: number) => {
     if (urgency < 0) return 'text-red-600 dark:text-red-400';
     if (urgency < 5) return 'text-yellow-600 dark:text-yellow-400';
@@ -52,7 +65,10 @@ export default function PartsTable({ parts, sortField, sortDirection, onDelete, 
   if (loading) {
     return (
       <div className="p-8 text-center text-zinc-500 dark:text-zinc-400">
-        Loading parts...
+        <div className="inline-flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-zinc-300 dark:border-zinc-600 border-t-blue-600 dark:border-t-blue-400 rounded-full spinner"></div>
+          <span>Loading parts...</span>
+        </div>
       </div>
     );
   }
@@ -89,43 +105,49 @@ export default function PartsTable({ parts, sortField, sortDirection, onDelete, 
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-          {parts.length === 0 ? (
+          {displayedParts.length === 0 ? (
             <tr>
               <td colSpan={8} className="px-3 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
                 No parts found. {loading ? 'Loading...' : 'Add parts using the form above or load test data.'}
               </td>
             </tr>
           ) : (
-            parts.map((part) => (
+            displayedParts.map((part, index) => (
               <tr
                 key={part.id}
-                className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors"
+                style={{
+                  animation: `fadeIn 0.4s ease-out ${Math.min(index * 0.02, 0.3)}s both`,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+                className={`table-row hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-opacity duration-200 ${
+                  isAnimating ? 'opacity-30' : 'opacity-100'
+                }`}
               >
-                <td className="px-3 py-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                <td className="px-3 py-2 text-sm font-medium text-zinc-900 dark:text-zinc-100 transition-colors">
                   {part.name}
                 </td>
-                <td className="px-3 py-2 text-sm text-right text-zinc-700 dark:text-zinc-300">
+                <td className="px-3 py-2 text-sm text-right text-zinc-700 dark:text-zinc-300 transition-colors">
                   {part.currentStock}
                 </td>
-                <td className="px-3 py-2 text-sm text-right text-zinc-700 dark:text-zinc-300">
+                <td className="px-3 py-2 text-sm text-right text-zinc-700 dark:text-zinc-300 transition-colors">
                   {part.reorderPoint}
                 </td>
-                <td className={`px-3 py-2 text-sm text-right font-semibold ${getPriorityColor(part.urgency)}`}>
+                <td className={`px-3 py-2 text-sm text-right font-semibold transition-colors ${getPriorityColor(part.urgency)}`}>
                   {part.urgency > 0 ? '+' : ''}{part.urgency}
                 </td>
-                <td className="px-3 py-2 text-sm text-right text-zinc-700 dark:text-zinc-300">
+                <td className="px-3 py-2 text-sm text-right text-zinc-700 dark:text-zinc-300 transition-colors">
                   {part.supplierLeadTime}d
                 </td>
-                <td className="px-3 py-2 text-sm text-right text-zinc-700 dark:text-zinc-300">
+                <td className="px-3 py-2 text-sm text-right text-zinc-700 dark:text-zinc-300 transition-colors">
                   {formatCurrency(part.cost)}
                 </td>
-                <td className="px-3 py-2 text-center">
+                <td className="px-3 py-2 text-center transition-colors">
                   {getStatusBadge(part.urgency, part.needsReorder)}
                 </td>
-                <td className="px-3 py-2 text-center">
+                <td className="px-3 py-2 text-center transition-colors">
                   <button
                     onClick={() => onDelete(part.id)}
-                    className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium transition-colors"
+                    className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium transition-all duration-200 hover:scale-105"
                   >
                     Delete
                   </button>
