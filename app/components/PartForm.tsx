@@ -26,9 +26,6 @@ export default function PartForm({ onAddPart }: PartFormProps) {
       reorderPoint: parseInt(formData.reorderPoint) || 0,
       supplierLeadTime: parseInt(formData.supplierLeadTime) || 0,
       cost: parseFloat(formData.cost) || 0,
-
-      // supplierID
-      supplierId: ''
     };
     const request = await fetch('./api/parts', {
       method: 'POST',
@@ -51,9 +48,6 @@ export default function PartForm({ onAddPart }: PartFormProps) {
       reorderPoint: reqData.reorderPoint,
       supplierLeadTime: reqData.supplierLeadTime,
       cost: reqData.cost,
-
-      // supplierID
-      supplierId: ''
     }
 
     onAddPart(newPart);

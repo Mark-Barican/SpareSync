@@ -25,9 +25,10 @@ export async function getParts() {
 
 export async function createPart(part: parts) {
     const sql = getSql();
+    const trimmedName = part.name.trim();
     const result = await sql`
     INSERT INTO spare_parts (name, current_stock, reorder_point, supplier_lead_time, cost)
-    VALUES (${part.name}, ${part.currentStock}, ${part.reorderPoint}, ${part.supplierLeadTime}, ${part.cost})
+    VALUES (${trimmedName}, ${part.currentStock}, ${part.reorderPoint}, ${part.supplierLeadTime}, ${part.cost})
     RETURNING *`;
 
     return result;
@@ -36,11 +37,34 @@ export async function createPart(part: parts) {
 // PATCH
 export async function updatePart(id: string, part: parts) {
     const sql = getSql();
+    // Trim name if it exists in the part object
+    const updatedName = part.name ? part.name.trim() : part.name;
+
     await sql`
     UPDATE spare_parts
-    SET name = ${part.name}, currentStock = ${part.currentStock}, reorderPoint = ${part.reorderPoint}, supplierLeadTime = ${part.supplierLeadTime}, cost = ${part.cost}
+    SET name = ${updatedName}, currentStock = ${part.currentStock}, reorderPoint = ${part.reorderPoint}, supplierLeadTime = ${part.supplierLeadTime}, cost = ${part.cost}
     WHERE id = ${id}
     `;
+}
+
+
+export async function getPartById(id: string) {
+    const sql = getSql();
+    const result = await sql`
+    SELECT * FROM spare_parts
+    WHERE id = ${id}
+    `;
+    return result.length > 0 ? result[0] : null;
+}
+
+export async function searchParts(searchTerm: string) {
+    const sql = getSql();
+    const result = await sql`
+    SELECT * FROM spare_parts
+    WHERE name ILIKE ${'%' + searchTerm + '%'}
+    ORDER BY created_at DESC
+    `;
+    return result;
 }
 
 // DELETE

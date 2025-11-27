@@ -5,62 +5,82 @@ import { SparePart } from '@/app/types';
 
 // ./api/parts -> JSON containing all parts.
 export async function GET(request: NextRequest) {
-  const parts = await getParts();
-  const result : SparePart[] = [];
+  try {
+    const parts = await getParts();
+    const result : SparePart[] = [];
 
-  for (const idx in parts) {
-    const part = parts[idx];
+    for (const idx in parts) {
+      const part = parts[idx];
 
-    const data : SparePart = {
-      id: part.id,
-      name: part.name,
-      currentStock: part.current_stock,
-      reorderPoint: part.reorder_point,
-      supplierLeadTime: part.supplier_lead_time,
-      cost: part.cost,
+      const data : SparePart = {
+        id: part.id,
+        name: part.name,
+        currentStock: part.current_stock,
+        reorderPoint: part.reorder_point,
+        supplierLeadTime: part.supplier_lead_time,
+        cost: part.cost,
+      }
+
+      result.push(data);
     }
 
-    result.push(data);
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error('Failed to retrieve parts:', error);
+    return NextResponse.json({ error: 'Failed to retrieve parts' }, { status: 500 });
   }
-
-  return NextResponse.json(result);
 }
 
 // POST ./api/parts -> creating a new part resource.
 export async function POST(request: NextRequest) {
   const body = await request.json();
 
-  /*
-      id: Date.now().toString(),
-      name: formData.name,
-      currentStock: parseInt(formData.currentStock) || 0,
-      reorderPoint: parseInt(formData.reorderPoint) || 0,
-      supplierLeadTime: parseInt(formData.supplierLeadTime) || 0,
-      cost: parseFloat(formData.cost) || 0,
-  */
+  const { name, currentStock, reorderPoint, supplierLeadTime, cost } = body;
 
-  const part : parts = body;
-  
-  const action = await createPart(part);
-
-  const result : SparePart[] = [];
-
-  for (const idx in action) {
-    const part = action[idx];
-
-    const data : SparePart = {
-      id: part.id,
-      name: part.name,
-      currentStock: part.current_stock,
-      reorderPoint: part.reorder_point,
-      supplierLeadTime: part.supplier_lead_time,
-      cost: part.cost,
-    }
-
-    result.push(data);
+  // Data validation
+  if (!name || typeof name !== 'string' || name.trim() === '') {
+    return NextResponse.json({ error: 'Name is required and must be a non-empty string' }, { status: 400 });
+  }
+  if (typeof currentStock !== 'number' || currentStock < 0) {
+    return NextResponse.json({ error: 'Current Stock must be a non-negative number' }, { status: 400 });
+  }
+  if (typeof reorderPoint !== 'number' || reorderPoint < 0) {
+    return NextResponse.json({ error: 'Reorder Point must be a non-negative number' }, { status: 400 });
+  }
+  if (typeof supplierLeadTime !== 'number' || supplierLeadTime < 0) {
+    return NextResponse.json({ error: 'Supplier Lead Time must be a non-negative number' }, { status: 400 });
+  }
+  if (typeof cost !== 'number' || cost < 0) {
+    return NextResponse.json({ error: 'Cost must be a non-negative number' }, { status: 400 });
   }
 
-  return NextResponse.json(result[0], {
-    status: 201,
-  });
+  const part: parts = { name, currentStock, reorderPoint, supplierLeadTime, cost };
+  
+  try {
+    const action = await createPart(part);
+
+    const result : SparePart[] = [];
+
+    for (const idx in action) {
+      const part = action[idx];
+
+      const data : SparePart = {
+        id: part.id,
+        name: part.name,
+        currentStock: part.current_stock,
+        reorderPoint: part.reorder_point,
+        supplierLeadTime: part.supplier_lead_time,
+        cost: part.cost,
+      }
+
+      result.push(data);
+    }
+
+    return NextResponse.json(result[0], {
+      status: 201,
+    });
+  } catch (error) {
+      console.error('Failed to create part:', error);
+      return NextResponse.json({ error: 'Failed to create part' }, { status: 500 });
+  }
 }
